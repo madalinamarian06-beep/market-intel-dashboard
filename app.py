@@ -3,7 +3,7 @@ Market Intelligence Dashboard — MVP
 Author: Madalina Marian & Levin B. Gutsmuths
 Purpose: Minimal Streamlit scaffold for a lightweight market dashboard.
 """
-#hi  
+
 from __future__ import annotations
 from datetime import datetime
 from typing import List
