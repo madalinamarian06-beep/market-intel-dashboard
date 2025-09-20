@@ -3,7 +3,7 @@ Market Intelligence Dashboard — MVP
 Author: Madalina Marian & Levin B. Gutsmuths
 Purpose: Minimal Streamlit scaffold for a lightweight market dashboard.
 """
-
+#hi  
 from __future__ import annotations
 from datetime import datetime
 from typing import List
@@ -142,3 +142,4 @@ if tickers:
         st.plotly_chart(fig, use_container_width=True)
 
 st.caption("Data via Yahoo Finance. Past performance summary .")
+
