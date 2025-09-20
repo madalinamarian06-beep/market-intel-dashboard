@@ -1,15 +1,12 @@
 """
 Market Intelligence Dashboard — MVP
-Author: <your name>
+Author: Madalina Marian & Levin B. Gutsmuths
 Purpose: Minimal Streamlit scaffold for a lightweight market dashboard.
 """
 
-# ---------- Standard library imports ----------
 from __future__ import annotations
 from datetime import datetime
 from typing import List
-
-# ---------- Third-party imports ----------
 import pytz
 import numpy as np
 import pandas as pd
@@ -17,7 +14,7 @@ import streamlit as st
 import yfinance as yf
 import plotly.graph_objects as go
 
-# ---------- Basic page config ----------
+#Configurating page layout
 st.set_page_config(
     page_title="Market Intelligence Dashboard — MVP",
     layout="wide",
@@ -25,18 +22,17 @@ st.set_page_config(
 )
 st.caption(f"Loaded file: {__file__}")
 
-# ---------- App Title & Subtitle ----------
-st.title("📈 Market Intelligence Dashboard — MVP")
+st.title("Market Intelligence Dashboard — MVP")
 st.caption(
-    "Goal: a tiny, fast, personal market monitor. "
+    "Goal: First sketch of a small, personal market monitor. "
     "Built with Python + Streamlit. Data source: Yahoo Finance."
 )
 
-# ---------- Constants ----------
+#Timezone and basic tickers 
 BERLIN_TZ = pytz.timezone("Europe/Berlin")
 DEFAULT_TICKERS: List[str] = ["AAPL", "MSFT", "NVDA", "AMZN", "TSLA"]
 
-# ---------- Sidebar: user inputs ----------
+# Sidebar seetup
 st.sidebar.header("Settings")
 raw_tickers = st.sidebar.text_input(
     label="Tickers (comma-separated)",
@@ -50,18 +46,19 @@ def parse_tickers(s: str) -> List[str]:
 
 tickers: List[str] = parse_tickers(raw_tickers)
 
-# Manual refresh button
-refresh = st.sidebar.button("🔄 Refresh data")
-# ---- Sidebar additions ----
+# Refresh button for updates on data
+refresh = st.sidebar.button("Refresh data")
+
+# Lookback period for trailing growth calculation
 lookback_days = st.sidebar.slider(
     "Lookback for trailing growth (trading days)",
-    min_value=126, max_value=756, value=252, step=21
+    min_value=182, max_value=1095, value=252, step=21
 )
 now_local = datetime.now(BERLIN_TZ)
 # A nonce to force-refresh cache when you click the button
 nonce = int(now_local.timestamp()) if refresh else 0
 
-# ---- Cached data helpers ----
+# Data fetching with caching to avoid redundant calls
 @st.cache_data(ttl=120)
 def get_snapshot(tickers: list[str], lookback_days: int, _nonce: int = 0) -> pd.DataFrame:
     rows = []
@@ -71,7 +68,7 @@ def get_snapshot(tickers: list[str], lookback_days: int, _nonce: int = 0) -> pd.
         try:
             tk = yf.Ticker(t)
 
-            # Name/Currency (best effort)
+            # Name/Currency
             try:
                 info = tk.get_info()
             except Exception:
@@ -79,7 +76,7 @@ def get_snapshot(tickers: list[str], lookback_days: int, _nonce: int = 0) -> pd.
             row["Name"] = info.get("shortName") or info.get("longName") or t
             row["Currency"] = info.get("currency") or "—"
 
-            # Price & Day % (raw closes)
+            # Price & Day % 
             h = tk.history(period="5d", interval="1d", auto_adjust=False).dropna(how="all")
             if not h.empty:
                 last_close = float(h["Close"].iloc[-1])
@@ -88,7 +85,7 @@ def get_snapshot(tickers: list[str], lookback_days: int, _nonce: int = 0) -> pd.
                 if np.isfinite(prev_close) and prev_close != 0:
                     row["Day %"] = (last_close / prev_close - 1.0) * 100.0
 
-            # Trailing CAGR (use adjusted closes)
+            # Trailing CAGR
             lb = f"{lookback_days}d"
             h2 = tk.history(period=lb, interval="1d", auto_adjust=True).dropna(how="all")
             if len(h2) >= 2:
@@ -112,7 +109,7 @@ def get_history_for_chart(ticker: str, period: str = "1y") -> pd.DataFrame:
 
 
 
-# ---------- Main: status / timestamp ----------
+# Main app logic
 now_local = datetime.now(BERLIN_TZ)
 st.markdown(
     f"**Last refreshed:** {now_local:%Y-%m-%d %H:%M:%S %Z}  •  "
@@ -131,7 +128,7 @@ st.subheader("Watchlist")
 st.dataframe(fmt[["Ticker","Name","Price","Currency","Day %","Predicted Growth (ann.)"]],
              use_container_width=True, hide_index=True)
 
-# Simple Plotly chart for a selected ticker
+# Chart for a selected ticker
 if tickers:
     st.subheader("Price history")
     chosen = st.selectbox("Choose a ticker to chart", options=tickers, index=0)
@@ -145,4 +142,3 @@ if tickers:
         st.plotly_chart(fig, use_container_width=True)
 
 st.caption("Data via Yahoo Finance. Past performance summary .")
-
